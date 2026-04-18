@@ -58,6 +58,7 @@
 #define ACTION_DEL   'D'
 #define ACTION_UPD   'U'
 #define ACTION_ORD   'O'
+#define ACTION_DIS   'S'          /* Dispatch — for undo             */
 
 /* ============================================================
  *  STRUCT DEFINITIONS
@@ -119,7 +120,7 @@ static Stack      g_undo;         /* Undo history stack              */
  *  UTILITY HELPERS
  * ============================================================ */
 
-/* Hash function: djb2 variant on the integer id */
+/* Hash function: maps integer id to a bucket index using modular arithmetic */
 static int hash(int id) {
     /* Ensure non-negative bucket index */
     int h = id % TABLE_SIZE;
@@ -261,6 +262,18 @@ static Order *queue_dequeue(void) {
     g_orders.size--;
     o->next = NULL;
     return o;
+}
+
+/* Enqueue an order at the front of the queue (used by dispatch undo) */
+static void queue_enqueue_front(int id, int qty) {
+    Order *o = (Order *)malloc(sizeof(Order));
+    if (!o) { printf("  [!] Memory allocation failed.\n"); return; }
+    o->id       = id;
+    o->quantity = qty;
+    o->next     = g_orders.front;
+    g_orders.front = o;
+    if (!g_orders.rear) g_orders.rear = o;  /* was empty */
+    g_orders.size++;
 }
 
 /* ============================================================
@@ -445,6 +458,7 @@ void addOrder(void) {
     int id, qty;
     printf("\n--- Add Order ---\n");
     if (!read_int("  Item ID  : ", &id)) return;
+    if (id <= 0) { printf("  [!] ID must be positive.\n"); return; }
     if (!read_int("  Quantity : ", &qty)) return;
     if (qty <= 0) { printf("  [!] Order quantity must be positive.\n"); return; }
 
@@ -493,10 +507,16 @@ void dispatchOrder(void) {
         return;
     }
 
-    item->quantity -= o->quantity;
+    int dispatched_qty  = o->quantity;
+    item->quantity     -= dispatched_qty;
+
+    /* Record dispatch for undo (Data Structure: Stack) */
+    stack_push(ACTION_DIS, item->id, dispatched_qty,
+               item->name, item->min_threshold, 0);
+
     printf("  [>>] Dispatched: Item '%s' (ID %d), Qty %d. "
            "Remaining stock: %d\n",
-           item->name, item->id, o->quantity, item->quantity);
+           item->name, item->id, dispatched_qty, item->quantity);
 
     if (item->quantity <= item->min_threshold)
         printf("  [!] WARNING: Low stock for '%s' after dispatch!\n",
@@ -568,26 +588,47 @@ void undoOperation(void) {
         break;
 
     case ACTION_ORD:
-        /* Reverse ORDER → remove the last enqueued order from queue rear
-         * This is a best-effort undo: we scan the queue for a matching
-         * order at the rear (orders are FIFO, so the last placed = rear). */
+        /* Reverse ORDER → remove the last-placed order from the queue rear.
+         * The last placed order is always at g_orders.rear (FIFO). */
         {
-            if (!g_orders.front) {
+            Order *cur = g_orders.rear;
+            if (!cur) {
                 printf("  [!] Undo ORDER: Queue is empty.\n");
                 break;
             }
-            /* Find and remove the rear order if it matches */
-            Order *prev = NULL, *cur = g_orders.front;
-            while (cur->next) { prev = cur; cur = cur->next; }
             if (cur->id == a->id && cur->quantity == a->quantity) {
-                if (prev) { prev->next = NULL; g_orders.rear = prev; }
-                else       { g_orders.front = NULL; g_orders.rear = NULL; }
+                if (g_orders.front == g_orders.rear) {
+                    /* Only one order in the queue */
+                    g_orders.front = g_orders.rear = NULL;
+                } else {
+                    /* Traverse to find the node just before rear */
+                    Order *prev = g_orders.front;
+                    while (prev->next != cur) prev = prev->next;
+                    prev->next    = NULL;
+                    g_orders.rear = prev;
+                }
                 g_orders.size--;
                 free(cur);
                 printf("  [<] Undo ORDER: Order for Item ID %d (Qty %d) removed.\n",
                        a->id, a->quantity);
             } else {
                 printf("  [!] Undo ORDER: Matching order not found at queue rear.\n");
+            }
+        }
+        break;
+
+    case ACTION_DIS:
+        /* Reverse DISPATCH → restore stock and re-insert order at queue front */
+        {
+            Item *item = ht_search(a->id);
+            if (!item) {
+                printf("  [!] Undo DISPATCH: Item ID %d not found.\n", a->id);
+            } else {
+                item->quantity += a->quantity;
+                queue_enqueue_front(a->id, a->quantity);
+                printf("  [<] Undo DISPATCH: Stock of '%s' restored by %d."
+                       " Order re-queued at front.\n",
+                       item->name, a->quantity);
             }
         }
         break;
@@ -625,7 +666,8 @@ void exportCSV(void) {
         while (node) {
             const char *status = (node->quantity <= node->min_threshold)
                                  ? "LOW" : "OK";
-            fprintf(fp, "%d,%s,%d,%d,%s\n",
+            /* Quote name field to handle commas in item names */
+            fprintf(fp, "%d,\"%s\",%d,%d,%s\n",
                     node->id, node->name,
                     node->quantity, node->min_threshold, status);
             count++;
