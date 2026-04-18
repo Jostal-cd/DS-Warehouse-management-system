@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Warehouse IMS</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f3f4f6;
+  --surface: #ffffff;
+  --border: #e5e7eb;
+  --text-main: #111827;
+  --text-muted: #6b7280;
+  --primary: #10b981;
+  --primary-hover: #059669;
+  --primary-light: #d1fae5;
+  --danger: #ef4444;
+  --danger-light: #fee2e2;
+  --sidebar-hover: #f9fafb;
+  --font: 'Inter', sans-serif;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font);
+  background-color: var(--bg);
+  color: var(--text-main);
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* --- Layout --- */
+.layout {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+/* --- Sidebar --- */
+aside {
+  width: 260px;
+  background-color: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+}
+
+.brand {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  padding: 0 1.5rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-main);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand svg {
+  color: var(--primary);
+  margin-right: 0.75rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+}
+
+.sidebar-content {
+  flex: 1;
+  padding: 1.5rem 1rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.nav-group-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding-left: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+nav button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+nav button svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  color: #9ca3af;
+  transition: color 0.2s ease;
+}
+
+nav button:hover {
+  background-color: var(--sidebar-hover);
+  color: var(--text-main);
+}
+
+nav button:hover svg {
+  color: var(--text-muted);
+}
+
+nav button.active {
+  background-color: var(--primary-light);
+  color: var(--primary);
+}
+
+nav button.active svg {
+  color: var(--primary);
+}
+
+.bottom-actions {
+  padding: 1rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.btn-sidebar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.625rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-sidebar:hover { background: var(--bg); }
+.btn-sidebar svg { width: 1.25rem; height: 1.25rem; flex-shrink: 0; color: var(--text-muted); }
+
+/* --- Main Area --- */
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+header {
+  height: 64px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  z-index: 5;
+}
+
+.page-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  background-color: var(--primary);
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.scroll-area {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+.section { display: none; }
+.section.active { display: block; animation: fade 0.3s ease; }
+@keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+/* --- Dashboard Stats --- */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.stat-icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: var(--primary-light);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.stat-icon svg { width: 1.5rem; height: 1.5rem; }
+
+.stat-card.danger .stat-icon { background: var(--danger-light); color: var(--danger); }
+
+.stat-content { flex: 1; }
+.stat-label { font-size: 0.875rem; font-weight: 500; color: var(--text-muted); margin-bottom: 0.25rem; }
+.stat-val { font-size: 1.5rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 0.75rem; }
+
+/* --- Content Cards --- */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.card-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.card-body {
+  padding: 1.5rem;
+}
+
+/* --- Tables --- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th {
+  background: var(--bg);
+  padding: 0.875rem 1.5rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
+}
+
+td {
+  padding: 1rem 1.5rem;
+  font-size: 0.875rem;
+  color: var(--text-main);
+  border-bottom: 1px solid var(--border);
+}
+
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background-color: #f8fafc; }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.badge-success { background: var(--primary-light); color: #065f46; }
+.badge-danger { background: var(--danger-light); color: #991b1b; }
+
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+/* --- Forms --- */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-main);
+}
+
+input {
+  padding: 0.625rem 0.875rem;
+  border: 1px solid #d1d5db;
+  border-radius: var(--radius-md);
+  font-family: var(--font);
+  font-size: 0.875rem;
+  color: var(--text-main);
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+}
+
+/* --- Buttons --- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font);
+}
+
+.btn-primary { background: var(--primary); color: white; box-shadow: var(--shadow-sm); }
+.btn-primary:hover { background: var(--primary-hover); }
+
+.btn-danger { background: var(--danger); color: white; box-shadow: var(--shadow-sm); }
+.btn-danger:hover { background: #dc2626; }
+
+/* --- Order List --- */
+.order-list { display: flex; flex-direction: column; }
+.order-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.order-row:last-child { border-bottom: none; }
+.order-row:hover { background: #f8fafc; }
+
+.order-info { display: flex; flex-direction: column; gap: 0.25rem; }
+.order-id { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; }
+.order-name { font-size: 0.875rem; font-weight: 500; color: var(--text-main); }
+.order-qty { font-size: 1rem; font-weight: 600; color: var(--text-main); }
+
+/* --- Search Results --- */
+.search-details {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  padding: 1.5rem;
+  background: var(--bg);
+  border-radius: var(--radius-md);
+  margin-top: 1.5rem;
+}
+.search-item { display: flex; flex-direction: column; gap: 0.25rem; }
+.search-label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; }
+.search-value { font-size: 0.875rem; font-weight: 500; color: var(--text-main); }
+
+/* --- Toasts --- */
+#toast-container {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.toast {
+  background: white;
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-left: 4px solid var(--primary);
+  animation: slideIn 0.3s ease;
+}
+.toast.err { border-left-color: var(--danger); }
+.toast svg { width: 1.25rem; height: 1.25rem; flex-shrink: 0; }
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+</style>
+</head>
+<body>
+
+<div class="layout">
+  
+  <aside>
+    <div class="brand">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+      WarehouseOS
+    </div>
+
+    <div class="sidebar-content">
+      <div>
+        <div class="nav-group-title">Dashboards</div>
+        <nav>
+          <button class="active" onclick="show('inventory')" id="nav-inventory">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+            Overview
+          </button>
+          <button onclick="show('orders')" id="nav-orders">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+            Order Queue
+          </button>
+        </nav>
+      </div>
+
+      <div>
+        <div class="nav-group-title">Inventory Operations</div>
+        <nav>
+          <button onclick="show('add')" id="nav-add">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+            Receive Stock
+          </button>
+          <button onclick="show('update')" id="nav-update">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+            Adjust Stock
+          </button>
+          <button onclick="show('search')" id="nav-search">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            Item Lookup
+          </button>
+          <button onclick="show('delete')" id="nav-delete">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            Remove Item
+          </button>
+        </nav>
+      </div>
+
+      <div>
+        <div class="nav-group-title">Fulfillment</div>
+        <nav>
+          <button onclick="show('order')" id="nav-order">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+            Create Order
+          </button>
+        </nav>
+      </div>
+    </div>
+
+    <div class="bottom-actions">
+      <button class="btn-sidebar" onclick="doUndo()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
+        Undo Action
+      </button>
+      <button class="btn-sidebar" onclick="doExport()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+        Export CSV
+      </button>
+    </div>
+  </aside>
+
+  <main>
+    <header>
+      <div class="page-title" id="page-title">Overview</div>
+      <div class="status-indicator">
+        <div class="status-dot"></div>
+        System Active
+      </div>
+    </header>
+
+    <div class="scroll-area">
+      
+      <!-- Inventory Section -->
+      <div class="section active" id="sec-inventory">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+            </div>
+            <div class="stat-content">
+              <div class="stat-label">Total SKUs</div>
+              <div class="stat-val" id="stat-total">0</div>
+            </div>
+          </div>
+          
+          <div class="stat-card danger">
+            <div class="stat-icon">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            </div>
+            <div class="stat-content">
+              <div class="stat-label">Low Stock</div>
+              <div class="stat-val">
+                <span id="stat-low">0</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#e0f2fe; color:#0ea5e9;">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+            </div>
+            <div class="stat-content">
+              <div class="stat-label">Pending Orders</div>
+              <div class="stat-val" id="stat-queue">0</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Inventory Database</span>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Item Description</th>
+                <th>Stock Level</th>
+                <th>Reorder Point</th>
+                <th>Health</th>
+              </tr>
+            </thead>
+            <tbody id="inv-body">
+              <tr><td colspan="5" class="empty-state">Loading data...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Orders Section -->
+      <div class="section" id="sec-orders">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Outbound Queue (FIFO)</span>
+            <button class="btn btn-primary" onclick="doDispatch()" style="padding: 0.375rem 0.75rem; font-size: 0.75rem;">
+              Dispatch Next
+            </button>
+          </div>
+          <div class="order-list" id="order-list">
+            <div class="empty-state">No orders in queue.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add Item -->
+      <div class="section" id="sec-add">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Receive New Stock</span></div>
+          <div class="card-body">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>SKU ID</label>
+                <input id="add-id" type="number" placeholder="Enter numeric ID">
+              </div>
+              <div class="form-group">
+                <label>Description</label>
+                <input id="add-name" type="text" placeholder="Item name">
+              </div>
+              <div class="form-group">
+                <label>Quantity</label>
+                <input id="add-qty" type="number" placeholder="Initial stock count">
+              </div>
+              <div class="form-group">
+                <label>Min. Threshold</label>
+                <input id="add-thr" type="number" placeholder="Reorder point">
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="doAdd()">Register Item</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Update Stock -->
+      <div class="section" id="sec-update">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Stock Adjustment</span></div>
+          <div class="card-body">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Item ID</label>
+                <input id="upd-id" type="number" placeholder="Enter ID">
+              </div>
+              <div class="form-group">
+                <label>Adjustment (+ or -)</label>
+                <input id="upd-delta" type="number" placeholder="e.g. -10 or 50">
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="doUpdate()">Apply Adjustment</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Search -->
+      <div class="section" id="sec-search">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Item Lookup</span></div>
+          <div class="card-body">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Item ID</label>
+                <input id="srch-id" type="number" placeholder="Enter ID">
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="doSearch()">Search</button>
+
+            <div id="search-result" style="display:none;">
+              <div class="search-details" id="search-content"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Delete -->
+      <div class="section" id="sec-delete">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Remove Item Record</span></div>
+          <div class="card-body">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Item ID</label>
+                <input id="del-id" type="number" placeholder="Enter ID">
+              </div>
+            </div>
+            <button class="btn btn-danger" onclick="doDelete()">Delete Record</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Order -->
+      <div class="section" id="sec-order">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Create Outbound Order</span></div>
+          <div class="card-body">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Item ID</label>
+                <input id="ord-id" type="number" placeholder="Enter target ID">
+              </div>
+              <div class="form-group">
+                <label>Quantity Required</label>
+                <input id="ord-qty" type="number" placeholder="Amount to dispatch">
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="doOrder()">Add to Queue</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+const API = 'http://localhost:8080';
+let currentSection = 'inventory';
+
+const titles = {
+  'inventory': 'Overview',
+  'orders': 'Order Queue',
+  'add': 'Receive Stock',
+  'update': 'Adjust Stock',
+  'search': 'Item Lookup',
+  'delete': 'Remove Item',
+  'order': 'Create Order'
+};
+
+function show(sec) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  
+  document.getElementById('sec-' + sec).classList.add('active');
+  const btn = document.getElementById('nav-' + sec);
+  if(btn) btn.classList.add('active');
+  
+  document.getElementById('page-title').textContent = titles[sec] || 'Overview';
+  currentSection = sec;
+  
+  if (sec === 'orders') loadOrders();
+}
+
+function toast(msg, ok) {
+  const container = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = `toast ${ok ? '' : 'err'}`;
+  
+  const icon = ok 
+    ? '<svg style="color:var(--primary)" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>'
+    : '<svg style="color:var(--danger)" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+    
+  el.innerHTML = `${icon}<div>${msg}</div>`;
+  container.appendChild(el);
+  
+  setTimeout(() => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateX(100%)';
+    setTimeout(() => el.remove(), 300);
+  }, 3000);
+}
+
+async function api(path, body) {
+  try {
+    const opts = body 
+      ? { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) }
+      : { method:'GET' };
+    const res = await fetch(API + path, opts);
+    return await res.json();
+  } catch(e) {
+    return { ok:false, msg:'Server connection failed.' };
+  }
+}
+
+async function loadInventory() {
+  const data = await api('/inventory');
+  if (!data.items) return;
+  
+  document.getElementById('stat-total').textContent = data.items.length;
+  document.getElementById('stat-queue').textContent = data.queue_size;
+  document.getElementById('stat-low').textContent = data.items.filter(i => i.low).length;
+
+  const tbody = document.getElementById('inv-body');
+  if (data.items.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No items in inventory.</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = data.items.map(i => `
+    <tr>
+      <td style="color:var(--text-muted);font-weight:500;">#${i.id}</td>
+      <td style="font-weight:500">${i.name}</td>
+      <td>${i.quantity}</td>
+      <td>${i.threshold}</td>
+      <td><span class="badge ${i.low ? 'badge-danger' : 'badge-success'}">${i.low ? 'Below Minimum' : 'Optimal'}</span></td>
+    </tr>`).join('');
+}
+
+async function loadOrders() {
+  const data = await api('/orders');
+  const el = document.getElementById('order-list');
+  if (!data.orders || data.orders.length === 0) {
+    el.innerHTML = '<div class="empty-state">No pending orders.</div>'; 
+    return;
+  }
+  
+  el.innerHTML = data.orders.map((o,i) => `
+    <div class="order-row">
+      <div class="order-info">
+        <div class="order-id">Pos #${i+1} &nbsp;•&nbsp; SKU ${o.id}</div>
+        <div class="order-name">${o.name || 'Unknown'}</div>
+      </div>
+      <div class="order-qty">Qty: ${o.quantity}</div>
+    </div>`).join('');
+}
+
+async function doAdd() {
+  const id=+document.getElementById('add-id').value;
+  const name=document.getElementById('add-name').value.trim();
+  const qty=+document.getElementById('add-qty').value;
+  const thr=+document.getElementById('add-thr').value;
+  const r = await api('/add',{id,name,quantity:qty,threshold:thr});
+  toast(r.msg, r.ok);
+  if(r.ok){ loadInventory(); ['add-id','add-name','add-qty','add-thr'].forEach(i=>document.getElementById(i).value=''); }
+}
+
+async function doDelete() {
+  const id=+document.getElementById('del-id').value;
+  const r = await api('/delete',{id});
+  toast(r.msg, r.ok);
+  if(r.ok){ loadInventory(); document.getElementById('del-id').value=''; }
+}
+
+async function doSearch() {
+  const id=+document.getElementById('srch-id').value;
+  const r = await api('/search',{id});
+  const wrapper=document.getElementById('search-result');
+  const content=document.getElementById('search-content');
+  
+  if(r.ok === false){ toast(r.msg, false); wrapper.style.display='none'; return; }
+  
+  wrapper.style.display='block';
+  content.innerHTML=`
+    <div class="search-item"><div class="search-label">Item ID</div><div class="search-value">${r.id}</div></div>
+    <div class="search-item"><div class="search-label">Description</div><div class="search-value">${r.name}</div></div>
+    <div class="search-item"><div class="search-label">Current Stock</div><div class="search-value">${r.quantity}</div></div>
+    <div class="search-item"><div class="search-label">Threshold</div><div class="search-value">${r.threshold}</div></div>
+    <div class="search-item" style="grid-column: 1 / -1;"><div class="search-label">Status</div><div><span class="badge ${r.status==='LOW'?'badge-danger':'badge-success'}">${r.status === 'LOW' ? 'Below Minimum' : 'Optimal'}</span></div></div>
+  `;
+}
+
+async function doUpdate() {
+  const id=+document.getElementById('upd-id').value;
+  const delta=+document.getElementById('upd-delta').value;
+  const r = await api('/update',{id,delta});
+  toast(r.msg, r.ok);
+  if(r.ok){ loadInventory(); ['upd-id','upd-delta'].forEach(i=>document.getElementById(i).value=''); }
+}
+
+async function doOrder() {
+  const id=+document.getElementById('ord-id').value;
+  const qty=+document.getElementById('ord-qty').value;
+  const r = await api('/order',{id,quantity:qty});
+  toast(r.msg, r.ok);
+  if(r.ok){ loadInventory(); ['ord-id','ord-qty'].forEach(i=>document.getElementById(i).value=''); }
+}
+
+async function doDispatch() {
+  const r = await api('/dispatch', {});
+  toast(r.msg, r.ok);
+  loadInventory();
+  if(currentSection==='orders') loadOrders();
+}
+
+async function doUndo() {
+  const r = await api('/undo', {});
+  toast(r.msg, r.ok);
+  loadInventory();
+  if(currentSection==='orders') loadOrders();
+}
+
+async function doExport() {
+  const r = await api('/export', {});
+  toast(r.msg, r.ok);
+}
+
+document.addEventListener('keydown', e => {
+  if(e.key!=='Enter') return;
+  if(currentSection==='add') doAdd();
+  else if(currentSection==='delete') doDelete();
+  else if(currentSection==='search') doSearch();
+  else if(currentSection==='update') doUpdate();
+  else if(currentSection==='order') doOrder();
+});
+
+loadInventory();
+setInterval(() => { loadInventory(); if(currentSection==='orders') loadOrders(); }, 3000);
+</script>
+</body>
+</html>
