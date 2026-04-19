@@ -289,19 +289,19 @@ void addItem(void) {
     int id, qty, thresh;
 
     printf("\n--- Add Item ---\n");
-    if (!read_int("  Item ID        : ", &id)) return;
+    if (!read_int("  Item ID: ", &id)) return;
     if (id <= 0) { printf("  [!] ID must be positive.\n"); return; }
     if (ht_search(id)) {
         printf("  [!] Item ID %d already exists. Use Update Stock instead.\n", id);
         return;
     }
-    if (!read_int("  Quantity       : ", &qty)) return;
+    if (!read_int("  Quantity: ", &qty)) return;
     if (qty < 0) { printf("  [!] Quantity cannot be negative.\n"); return; }
-    if (!read_int("  Min Threshold  : ", &thresh)) return;
+    if (!read_int("  Min Threshold: ", &thresh)) return;
     if (thresh < 0) { printf("  [!] Threshold cannot be negative.\n"); return; }
 
     char name[NAME_LEN];
-    read_string("  Item Name      : ", name, NAME_LEN);
+    read_string("  Item Name: ", name, NAME_LEN);
     if (strlen(name) == 0) { printf("  [!] Name cannot be empty.\n"); return; }
 
     /* Allocate and populate item */
@@ -336,7 +336,7 @@ void addItem(void) {
 void deleteItem(void) {
     int id;
     printf("\n--- Delete Item ---\n");
-    if (!read_int("  Item ID to delete : ", &id)) return;
+    if (!read_int("  Item ID to delete: ", &id)) return;
 
     Item *item = ht_search(id);
     if (!item) {
@@ -360,7 +360,7 @@ void deleteItem(void) {
 void updateStock(void) {
     int id, delta;
     printf("\n--- Update Stock ---\n");
-    if (!read_int("  Item ID  : ", &id)) return;
+    if (!read_int("  Item ID: ", &id)) return;
 
     Item *item = ht_search(id);
     if (!item) { printf("  [!] Item ID %d not found.\n", id); return; }
@@ -418,9 +418,7 @@ void searchItem(void) {
  * prints every item. Flags low-stock items.
  */
 void displayInventory(void) {
-    printf("\n============================================================\n");
-    printf("                   WAREHOUSE INVENTORY\n");
-    printf("============================================================\n");
+    printf("\nWAREHOUSE INVENTORY\n");
     printf("  %-6s %-20s %-10s %-10s %s\n",
            "ID", "Name", "Quantity", "Threshold", "Status");
     printf("  %-6s %-20s %-10s %-10s %s\n",
@@ -441,8 +439,6 @@ void displayInventory(void) {
     }
     if (!found)
         printf("  (Inventory is empty)\n");
-
-    printf("============================================================\n");
 }
 
 /* ============================================================
